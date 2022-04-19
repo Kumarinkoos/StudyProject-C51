@@ -6,4 +6,14 @@
 
 ### KingST
 
-&emsp;Cheaper 1为单片机基础知识。
+#### Cheaper 1 单片机基础知识
+
+&emsp;gitee博客：<http://kumarinko.gitee.io/2022/04/19/Study-KingST51-Cheaper1/>
+
+&emsp;github博客：<https://kumarinkoos.github.io/2022/04/19/Study-KingST51-Cheaper1/>
+
+#### Cheaper 2 点亮LED
+
+&emsp;gitee博客：<https://gitee.com/kumarinko>
+
+&emsp;github博客：<https://kumarinkoos.github.io/>
