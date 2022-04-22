@@ -20,9 +20,9 @@
 
 #### Cheaper 3
 
-&emsp;gitee博客：<>
+&emsp;gitee博客：<http://kumarinko.gitee.io/2022/04/23/Study-KingST51-Cheaper3/>
 
-&emsp;github博客：<>
+&emsp;github博客：<https://kumarinkoos.github.io/2022/04/23/Study-KingST51-Cheaper3/>
 
 #### Cheaper 4
 
