@@ -1,0 +1,4 @@
+".\Objects\STARTUP.obj",
+".\Objects\main.obj" 
+TO ".\Objects\FlowLEDRight-ex" 
+PRINT(".\Listings\FlowLEDRight-ex.m51") RAMSIZE(256) 

@@ -26,9 +26,9 @@
 
 #### Cheaper 4
 
-&emsp;gitee博客：<>
+&emsp;gitee博客：<http://kumarinko.gitee.io/2022/04/24/Study-KingST51-Cheaper4/>
 
-&emsp;github博客：<>
+&emsp;github博客：<https://kumarinkoos.github.io/2022/04/24/Study-KingST51-Cheaper4/>
 
 #### Cheaper 5
 

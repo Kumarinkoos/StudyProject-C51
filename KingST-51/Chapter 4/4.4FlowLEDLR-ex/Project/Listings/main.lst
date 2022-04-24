@@ -1,0 +1,71 @@
+C51 COMPILER V9.54   MAIN                                                                  04/24/2022 11:56:48 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: D:\soft\Keil\Keil\C51\BIN\C51.EXE ..\User\main.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(
+                    -.\Listings\main.lst) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          #include <reg52.h>
+   2          
+   3          sbit ADDR0 = P1^0;
+   4          sbit ADDR1 = P1^1;
+   5          sbit ADDR2 = P1^2;
+   6          sbit ADDR3 = P1^3;
+   7          sbit ENLED = P1^4;
+   8          
+   9          void main()
+  10          {
+  11   1        //声明语句
+  12   1        unsigned char cnt = 0; //用来移位控制
+  13   1        unsigned int i = 0;   //用来软件延时
+  14   1        unsigned char flag = 1; //用来决定左移还是右移的flag
+  15   1        //执行语句
+  16   1        ENLED = 0;        //使能U3（74HC138）的E1和E2
+  17   1        ADDR3 = 1;        //使能U3（74HC138）的E3，使之能正常输出
+  18   1        ADDR2 = 1;        //经U3的Y6输出来开启Q16三极管
+  19   1        ADDR1 = 1;
+  20   1        ADDR0 = 0;
+  21   1        while(1)
+  22   1        {
+  23   2          if(flag == 1)
+  24   2          {
+  25   3            P0 = ~(0x01 << cnt);    //左移
+  26   3            for(i = 0;i < 20000;i++); //延时
+  27   3            cnt++;
+  28   3            if(cnt >= 8)          //移动不能超过8
+  29   3            {
+  30   4              cnt = 0;
+  31   4              flag = 0;         //左移结束后将flag置0，接下来将右移
+  32   4            }
+  33   3          }else if(flag == 0)
+  34   2          {
+  35   3            P0 = ~(0x80 >> cnt);  //右移
+  36   3            for(i = 0;i < 20000;i++); //延时
+  37   3            cnt++;
+  38   3            if(cnt >= 8)          //移动不能超过8
+  39   3            {
+  40   4              cnt = 0;
+  41   4              flag = 1;         //右移结束后将flag置1，接下来将左移
+  42   4            }
+  43   3          }
+  44   2        }
+  45   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    104    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+C51 COMPILER V9.54   MAIN                                                                  04/24/2022 11:56:48 PAGE 2   
+
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,4 @@
+".\Objects\STARTUP.obj",
+".\Objects\main.obj" 
+TO ".\Objects\FlashLEDall-ex" 
+PRINT(".\Listings\FlashLEDall-ex.m51") RAMSIZE(256) 
