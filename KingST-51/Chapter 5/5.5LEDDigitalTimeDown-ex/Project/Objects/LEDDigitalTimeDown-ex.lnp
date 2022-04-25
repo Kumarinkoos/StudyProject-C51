@@ -1,0 +1,4 @@
+".\Objects\STARTUP.obj",
+".\Objects\main.obj" 
+TO ".\Objects\LEDDigitalTimeDown-ex" 
+PRINT(".\Listings\LEDDigitalTimeDown-ex.m51") RAMSIZE(256) 

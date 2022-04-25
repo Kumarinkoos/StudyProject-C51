@@ -1,0 +1,4 @@
+".\Objects\STARTUP.obj",
+".\Objects\main.obj" 
+TO ".\Objects\FlowLEDTime-ex" 
+PRINT(".\Listings\FlowLEDTime-ex.m51") RAMSIZE(256) 

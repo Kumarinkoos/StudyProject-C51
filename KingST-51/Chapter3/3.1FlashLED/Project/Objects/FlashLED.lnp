@@ -1,4 +1,0 @@
-".\Objects\STARTUP.obj",
-".\Objects\main.obj" 
-TO ".\Objects\FlashLED" 
-PRINT(".\Listings\FlashLED.m51") RAMSIZE(256) 

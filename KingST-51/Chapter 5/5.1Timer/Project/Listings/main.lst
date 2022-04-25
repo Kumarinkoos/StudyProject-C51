@@ -1,0 +1,76 @@
+C51 COMPILER V9.54   MAIN                                                                  04/25/2022 23:21:56 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: D:\soft\Keil\Keil\C51\BIN\C51.EXE ..\User\main.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(
+                    -.\Listings\main.lst) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          /*
+   2          *******************************************************************************
+   3          *                     《手把手教你学51单片机(C语言版)》
+   4          * 文件名：main.c
+   5          * 描  述：第5章 例程代码
+   6          * 版本号：v1.0.0
+   7          * 备  注：利用定时器实现闪烁LED
+   8          *******************************************************************************
+   9          */
+  10          #include <reg52.h>
+  11          
+  12          sbit LED = P0^0;
+  13          sbit ADDR0 = P1^0;
+  14          sbit ADDR1 = P1^1;
+  15          sbit ADDR2 = P1^2;
+  16          sbit ADDR3 = P1^3;
+  17          sbit ENLED = P1^4;
+  18          
+  19          void main()
+  20          {
+  21   1        //声明语句
+  22   1        unsigned char cnt = 0;
+  23   1        //执行语句
+  24   1        ENLED = 0;  //使能74H138
+  25   1        ADDR3 = 1;  //使LEDS6为低电平来让LED所在的三极管导通
+  26   1        ADDR2 = 1;
+  27   1        ADDR1 = 1;
+  28   1        ADDR0 = 0;
+  29   1        
+  30   1        TMOD = 0x01;  //设置定时器模式寄存器为T0的工作模式1
+  31   1        TH0 = 0xB8; //定时器0.02s
+  32   1        TL0 = 0x00;
+  33   1        TR0 = 1;  //启动T0
+  34   1        while(1)
+  35   1        {
+  36   2          if(TF0 == 1)  //判断低八位是否溢出，没溢出自己计时，溢出了进入if
+  37   2          {
+  38   3            TF0 = 0;  //低八位溢出后，清除中断标志（软件清零）
+  39   3            TH0 = 0xB8; //因为定时器要溢出重新计数（T0被清零），所以需要重新赋值让他从
+             -0xB8开始计
+  40   3            TL0 = 0x00;
+  41   3            cnt++;
+  42   3            if(cnt >= 50) //T0溢出50次就达到1秒了
+  43   3            {
+  44   4              cnt = 0;  //将cnt清零
+  45   4              LED = ~LED; //LED取反即为LED的亮灭
+  46   4            }
+  47   3          }
+  48   2        }
+  49   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     46    ----
+C51 COMPILER V9.54   MAIN                                                                  04/25/2022 23:21:56 PAGE 2   
+
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,4 @@
+".\Objects\STARTUP.obj",
+".\Objects\main.obj" 
+TO ".\Objects\LEDDigitalTimeUp" 
+PRINT(".\Listings\LEDDigitalTimeUp.m51") RAMSIZE(256) 

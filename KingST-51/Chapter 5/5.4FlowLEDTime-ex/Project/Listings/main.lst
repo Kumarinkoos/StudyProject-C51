@@ -1,0 +1,105 @@
+C51 COMPILER V9.54   MAIN                                                                  04/26/2022 00:37:43 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: D:\soft\Keil\Keil\C51\BIN\C51.EXE ..\User\main.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(
+                    -.\Listings\main.lst) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          /*
+   2          *******************************************************************************
+   3          *                     《手把手教你学51单片机(C语言版)》
+   4          * 文件名：main.c
+   5          * 描  述：第5章 课后练习
+   6          * 版本号：v1.0.0
+   7          * 备  注：利用定时器实现左右移动的流水灯
+   8          *******************************************************************************
+   9          */
+  10          #include <reg52.h>
+  11          
+  12          sbit ADDR0 = P1^0;
+  13          sbit ADDR1 = P1^1;
+  14          sbit ADDR2 = P1^2;
+  15          sbit ADDR3 = P1^3;
+  16          sbit ENLED = P1^4;
+  17          
+  18          void main()
+  19          {
+  20   1        //声明语句
+  21   1        unsigned char cnt = 0;  //定时器计数用
+  22   1        unsigned char i = 0;  //移位控制用
+  23   1        unsigned char flag = 0; //控制左移还是右移用
+  24   1        //执行语句
+  25   1        ENLED = 0;  //使能U3（74H138）
+  26   1        ADDR3 = 1;  //使LEDS6为低电平来让LED所在的三极管Q16导通
+  27   1        ADDR2 = 1;
+  28   1        ADDR1 = 1;
+  29   1        ADDR0 = 0;
+  30   1        
+  31   1        TMOD = 0x01;  //设置定时器模式寄存器为T0的工作模式1
+  32   1        TH0 = 0xB8; //定时器0.02s
+  33   1        TL0 = 0x00;
+  34   1        TR0 = 1;  //启动T0
+  35   1        while(1)
+  36   1        {
+  37   2          if(flag == 0) //如果flag为0说明要左移
+  38   2          {
+  39   3            if(TF0 == 1)  //判断定时器是否溢出
+  40   3            {
+  41   4              TF0 = 0;  //定时器溢出后，清除中断标志（软件清零）
+  42   4              TH0 = 0xB8; //定时器溢出后要重新计数，所以要重新赋值从0xB8开始计数
+  43   4              TL0 = 0x00;
+  44   4              cnt++;
+  45   4              if(cnt >= 50) //T0溢出50次就达到1秒了
+  46   4              {
+  47   5                P0 = ~(0x01 << i);  //达到1秒后进行左移
+  48   5                cnt = 0;  //将cnt清零
+  49   5                i++;  //移动位数要加1
+  50   5                if(i >= 7)  //如果移动位数到8说明LED移动到最后一个了
+  51   5                {
+  52   6                  i = 0;  //将i清零
+  53   6                  flag = 1; //将flag置1，接下来将要右移
+  54   6                }
+C51 COMPILER V9.54   MAIN                                                                  04/26/2022 00:37:43 PAGE 2   
+
+  55   5              }
+  56   4            }
+  57   3          }else //如果flag为1说明要右移
+  58   2          {
+  59   3            if(TF0 == 1)
+  60   3            {
+  61   4              TF0 = 0;
+  62   4              TH0 = 0xB8;
+  63   4              TL0 = 0x00;
+  64   4              cnt++;
+  65   4              if(cnt >= 50)
+  66   4              {
+  67   5                P0 = ~(0x80 >> i);
+  68   5                cnt = 0;
+  69   5                i++;
+  70   5                if(i >= 7)
+  71   5                {
+  72   6                  i = 0;
+  73   6                  flag = 0;
+  74   6                }
+  75   5              }
+  76   4            }
+  77   3          }
+  78   2        }
+  79   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    119    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
