@@ -32,15 +32,15 @@
 
 #### Cheaper 5 定时器与数码管
 
-&emsp;gitee博客：<>
+&emsp;gitee博客：<https://kumarinko.gitee.io/2022/04/26/Study-KingST51-Cheaper5/>
 
-&emsp;github博客：<>
+&emsp;github博客：<https://kumarinkoos.github.io/2022/04/26/Study-KingST51-Cheaper5/>
 
 #### Cheaper 6 中断与数码管动态显示
 
-&emsp;gitee博客：<>
+&emsp;gitee博客：<https://kumarinko.gitee.io/2022/04/27/Study-KingST51-Cheaper6/>
 
-&emsp;github博客：<>
+&emsp;github博客：<https://kumarinkoos.github.io/2022/04/27/Study-KingST51-Cheaper6/>
 
 #### Cheaper 7 变量进阶与点阵LED
 

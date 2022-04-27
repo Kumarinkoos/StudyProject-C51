@@ -1,0 +1,4 @@
+".\Objects\STARTUP.obj",
+".\Objects\main.obj" 
+TO ".\Objects\TrendsLEDDigital" 
+PRINT(".\Listings\TrendsLEDDigital.m51") RAMSIZE(256) 
