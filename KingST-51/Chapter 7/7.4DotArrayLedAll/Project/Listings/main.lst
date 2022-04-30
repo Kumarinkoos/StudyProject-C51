@@ -1,0 +1,89 @@
+C51 COMPILER V9.54   MAIN                                                                  04/29/2022 00:51:46 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: D:\soft\Keil\Keil\C51\BIN\C51.EXE ..\User\main.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(
+                    -.\Listings\main.lst) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          /*
+   2          *******************************************************************************
+   3          *                     《手把手教你学51单片机(C语言版)》
+   4          * 文件名：main.c
+   5          * 描  述：第7章 例程代码
+   6          * 版本号：v1.0.0
+   7          * 备  注：点亮所有点阵LED
+   8          *******************************************************************************
+   9          */
+  10          #include <reg52.h>
+  11          
+  12          sbit ADDR0 = P1^0;
+  13          sbit ADDR1 = P1^1;
+  14          sbit ADDR2 = P1^2;
+  15          sbit ADDR3 = P1^3;
+  16          sbit ENLED = P1^4;
+  17          
+  18          //点阵LED和数码管一样，通过切换ADDR0-2来实现点亮所有点阵，所以也需要动态刷�
+             -��
+  19          
+  20          void main()
+  21          {
+  22   1        //执行语句
+  23   1        //LED相关
+  24   1        ENLED = 0;  //使能U4的74HC138
+  25   1        ADDR3 = 0;
+  26   1        //中断相关
+  27   1        EA = 1; //使能总中断
+  28   1        ET0 = 1;  //使能定时器0中断
+  29   1        //定时器相关
+  30   1        TMOD = 0x01;  //定时器T0选择模式1
+  31   1        TH0 = 0xFC;   //延时1ms，赋初值为0xFC67
+  32   1        TL0 = 0x67;
+  33   1        TR0 = 1;    //开启定时器
+  34   1        //循环体
+  35   1        while(1);
+  36   1      }
+  37          
+  38          //中断函数
+  39          void InterruptTimer0() interrupt 1
+  40          {
+  41   1        //声明局部变量
+  42   1        static unsigned char i = 0; //动态刷新索引
+  43   1        
+  44   1        //中断函数的执行语句
+  45   1        TH0 = 0xFC; //定时器中断后重新赋0xFC67
+  46   1        TL0 = 0x67;
+  47   1        
+  48   1        P0 = 0xFF;    //消影
+  49   1        //动态刷新
+  50   1        switch(i)
+  51   1        {
+  52   2          case 0:ADDR2 = 0; ADDR1 = 0; ADDR0 = 0; i++; P0 = 0x00; break;
+  53   2          case 1:ADDR2 = 0; ADDR1 = 0; ADDR0 = 1; i++; P0 = 0x00; break;
+C51 COMPILER V9.54   MAIN                                                                  04/29/2022 00:51:46 PAGE 2   
+
+  54   2          case 2:ADDR2 = 0; ADDR1 = 1; ADDR0 = 0; i++; P0 = 0x00; break;
+  55   2          case 3:ADDR2 = 0; ADDR1 = 1; ADDR0 = 1; i++; P0 = 0x00; break;
+  56   2          case 4:ADDR2 = 1; ADDR1 = 0; ADDR0 = 0; i++; P0 = 0x00; break;
+  57   2          case 5:ADDR2 = 1; ADDR1 = 0; ADDR0 = 1; i++; P0 = 0x00; break;
+  58   2          case 6:ADDR2 = 1; ADDR1 = 1; ADDR0 = 0; i++; P0 = 0x00; break;
+  59   2          case 7:ADDR2 = 1; ADDR1 = 1; ADDR0 = 1; i = 0; P0 = 0x00; break;
+  60   2          default: break; 
+  61   2        }
+  62   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    146    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      1    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

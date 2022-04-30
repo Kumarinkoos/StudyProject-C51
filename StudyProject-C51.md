@@ -1099,6 +1099,481 @@ void InterruptTimer0() interrupt 1  //进入中断函数即为定时器到1ms
 
 ## Chapter 7 变量进阶与点阵LED
 
+### 变量进阶
+
+#### 变量作用域
+
+&emsp;&emsp;**局部变量：**函数内部声明的变量，只在本函数内有效，此函数以外不能使用，叫做局部变量。（另外函数的形参也是局部变量）
+
+&emsp;&emsp;**全局变量：**在函数外部声明的变量就是全局变量。一个源程序可以包含一个或者多个函数，全局变量的作用范围是从它开始声明的位置一直到程序结束。
+
+&emsp;&emsp;全局变量的副作用：  
+&emsp;&emsp;&emsp;1.降低函数的独立性，对任何一个函数的修改都可能影响到其他函数。  
+&emsp;&emsp;&emsp;2.降低函数的通用性，不利于函数的重复调用。  
+&emsp;&emsp;&emsp;3.降低程序的清晰度，每个函数执行都有可能改变全局变量的值，无法清楚判断每个时刻的全局变量的值。  
+&emsp;&emsp;&emsp;4.全局变量永久占据内存单元。
+
+&emsp;&emsp;**所以原则上，尽量减少全局变量的使用，能用局部变量就不用全局变量。**当全局变量和局部变量同名，在局部变量作用域范围内，局部变量有效，但应该极力避免变量的重名。
+
+#### 变量的存储类别
+
+&emsp;&emsp;变量的存储类别分为自动，静态，寄存器和外部这四种，这里先介绍前两种。
+
+&emsp;&emsp;**自动变量：**函数中的局部变量，如果不加static关键字修饰，都属于自动变量，也叫做动态变量。动态变量的关键字是auto，但一般可以省略。
+
+&emsp;&emsp;**静态变量：**全局变量均始于静态变量，局部变量如果加了static关键字修饰的话，也是静态变量。它的特点是，在整个生存期中只赋一次初值。
+
+&emsp;&emsp;在上一章中断函数相关的程序中，我们用了三个全局变量，因为i和cnt只在中断函数中使用，这里我们将其缩少至一个全局变量，另外因为我们希望i和cnt值并不是每次进入中断函数都会被重新赋值的，所以i和cnt我我们需要使用静态变量。
+
+```C
+include<reg52.h>
+
+sbit ADDR0 = P1^0;
+sbit ADDR1 = P1^1;
+sbit ADDR2 = P1^2;
+sbit ADDR3 = P1^3;
+sbit ENLED = P1^4;
+
+//用数组来存储数码管的真值表
+unsigned char code LedChar[] = {
+    0xC0, 0xF9, 0xA4, 0xB0, 0x99, 0x92, 0x82, 0xF8,
+    0x80, 0x90
+};
+//数码管显示缓冲区，初值0xFF确保启动是所有数码管都不亮
+unsigned char LedBuff[6] = {
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
+}
+
+//声明全局变量，这里的变量main函数和中断函数都要用
+unsigned char flag1s = 0    //到达1s的标志位
+
+void main()
+{
+    //声明局部变量语句
+    unsigned long sec = 0;  //记录经过的秒数
+    //执行语句
+    //LED部分
+    ENLED = 0;  //使能U3的74HC138
+    ADDR3 = 1;  //因为需要动态改变ADDR0-2的值，所有不用再初始化了
+
+    //中断部分
+    EA = 1; //使能总中断
+    ET0 = 1;    //使能T0中断
+
+    //定时器部分
+    TMOD = 0x01;    //设定定时器T0为模式1
+    TH0 = 0xFC;     //T0赋值0xFC67，定时为1ms
+    TL0 = 0x67;
+    TR0 = 1;    //启动T0
+
+    while(1)
+    {
+        if(flag1s == 1)    //判断1s标志位是否为1
+        {
+            flag1s = 0; //1s标志位清零
+            sec++;      //经过一秒秒计数加1
+
+            //以下代码将sec按十进制从低位到高位依次存到显示缓冲区中
+            LedBuff[0] = LedChar[sec % 10];
+            LedBuff[1] = LedChar[sec / 10 % 10];
+            LedBuff[2] = LedChar[sec / 100 % 10];
+            LedBuff[3] = LedChar[sec / 1000 % 10];
+            LedBuff[4] = LedChar[sec / 10000 % 10];
+            LedBuff[5] = LedChar[sec / 10000 % 10];
+        }
+    }
+}
+
+/*定时器T0的中断函数*/
+void InterruptTimer0() interrupt 1  //进入中断函数即为定时器到1ms
+{
+    //声明局部静态变量
+    static unsigned int cnt = 0;   //记录T0溢出次数
+    static unsigned char i = 0;    //动态扫描的索引，即数码管的脚标
+    //定时器溢出时的中断标志位会被中断函数自动清零
+    TH0 = 0xFC;    //定时器T0溢出后，重新赋值
+    TL0 = 0x67;
+    cnt++;
+    if(cnt >= 1000 )    //达到1s
+    {
+        cnt = 0;    //达到1s后计数清零
+        flag1s = 1;      //1s标志位置1
+    }
+
+    //每次1ms中断都要刷新一下数码管
+    //以下为数码管动态扫描刷新
+    P0 = 0xFF;  //消影
+    switch(i)
+    {
+        case 0 : ADDR2 = 0;ADDR1 = 0;ADDR0 = 0;i++;P0 = LedBuff[0];break;     //第一次溢出点亮第一个数码管
+        case 1 : ADDR2 = 0;ADDR1 = 0;ADDR0 = 1;i++;P0 = LedBuff[1];break;     //第二次溢出点亮第二个数码管
+        case 2 : ADDR2 = 0;ADDR1 = 1;ADDR0 = 0;i++;P0 = LedBuff[2];break;     //第三次溢出点亮第三个数码管
+        case 3 : ADDR2 = 0;ADDR1 = 1;ADDR0 = 1;i++;P0 = LedBuff[3];break;     //第四次溢出点亮第四个数码管
+        case 4 : ADDR2 = 1;ADDR1 = 0;ADDR0 = 0;i++;P0 = LedBuff[4];break;     //第五次溢出点亮第五个数码管
+        case 5 : ADDR2 = 1;ADDR1 = 0;ADDR0 = 1;i++;P0 = LedBuff[5];break;     //第六次溢出点亮第六个数码管
+        default : break;
+    }
+}
+```
+
+### 点阵LED
+
+#### 点阵LED静态显示
+
+&emsp;&emsp;点阵LED本质也是LED，其结构图如图所示，左侧8个数字引脚是接的内部LED的阳极，上侧的8个引脚接的是内部LED的阴极，然后他们组成了阵列，所以要点亮它们就和点亮普通LED小灯一样，比如要点亮第1行第A列的LED就把9号引脚置高电平，13号引脚置低电平就能把这颗LED点亮。
+
+![点阵LED原理图](./imgforKingST-51/点阵LED原理图.png)
+
+![点阵LED电路图](./imgforKingST-51/点阵LED电路图.png)
+
+&emsp;&emsp;如电路图所示，控制点阵LED的左侧引脚为U4的74HC138控制，即ADDR0-2控制，控制点阵LED的上侧引脚为单片机P0控制。注意U4的74HC138，ENLED控制E2，ADDR3控制E1，E3直接连了5V不需要控制了（这里和U3的不一样）。所以启动U4的74HC138需要ENLED=0，ADDR3=0。所以，U3和U4是没有办法同时启动的。点亮点阵的第1行第A列的LED的程序为。
+
+![74HC138电路图](./imgforKingST-51/74HC138电路图.png)
+
+```C
+#include<reg52.h>
+
+sbit LED = P0^0;
+sbit ADDR0 = P1^0;
+sbit ADDR1 = P1^1;
+sbit ADDR2 = P1^2;
+sbit ADDR3 = P1^3;
+sbit ENLED = P1^4;
+
+void main()
+{
+    ENLED = 0;  //使能U4的74HC138
+    ADDR3 = 0;
+    ADDR2 = 0;  //经过三八译码器使能Q10
+    ADDR1 = 0;
+    ADDR0 = 1;
+
+    LED = 0;    //点亮点阵左上角的小灯
+    while(1);
+}
+```
+
+&emsp;&emsp;点亮点阵第一行LED的程序就如下
+
+```C
+#include<reg52.h>
+
+sbit ADDR0 = P1^0;
+sbit ADDR1 = P1^1;
+sbit ADDR2 = P1^2;
+sbit ADDR3 = P1^3;
+sbit ENLED = P1^4;
+
+void main()
+{
+    ENLED = 0;  //使能U4的74HC138
+    ADDR3 = 0;
+    ADDR2 = 0;  //经过三八译码器使能Q10
+    ADDR1 = 0;
+    ADDR0 = 1;
+
+    P0 = 0x00;    //点亮点阵第一行
+    while(1);
+}
+```
+
+&emsp;&emsp;和数码管一样点亮点阵的所有LED需要用到动态刷新，使用定时器每1ms轮流使Q10，Q11，Q12，Q13，Q18，Q19，Q20，Q21导通，这样就能看上去点亮所有LED了。程序如下。
+
+```C
+#include<reg52.h>
+
+sbit ADDR0 = P1^0;
+sbit ADDR1 = P1^1;
+sbit ADDR2 = P1^2;
+sbit ADDR3 = P1^3;
+sbit ENLED = P1^4;
+
+void main()
+{
+    //执行语句
+    //LED部分
+    ENLED = 0;  //使能U4的74HC138
+    ADDR3 = 0;
+    //中断部分
+    EA = 1;     //使能总中断
+    ET0 = 1;    //使能定时器0中断
+    //定时器部分
+    TMOD = 0x01;    //设置T0为模式1
+    TH0 = 0xFC;     //T0初值赋0xFC67，定时1ms
+    TL0 = 0x67;
+    TR0 = 1；       //启动定时器T0
+    //循环体
+    while(1);
+}
+
+//中断函数
+void InterruptTimer0() interrupt 1
+{
+    static unsigned char i = 0; //动态扫描索引
+
+    TH0 = 0xFC; //重新加载初值
+    TL0 = 0x67;
+
+    //以下为动态刷新
+    P0 = 0xFF;  //消隐
+    switch(i)
+    {
+        case 0 :ADDR2 = 0;ADDR1 = 0;ADDR0 = 0;i++;P0 = 0x00;break;
+        case 1 :ADDR2 = 0;ADDR1 = 0;ADDR0 = 1;i++;P0 = 0x00;break;
+        case 2 :ADDR2 = 0;ADDR1 = 1;ADDR0 = 0;i++;P0 = 0x00;break;
+        case 3 :ADDR2 = 0;ADDR1 = 1;ADDR0 = 1;i++;P0 = 0x00;break;
+        case 4 :ADDR2 = 1;ADDR1 = 0;ADDR0 = 0;i++;P0 = 0x00;break;
+        case 5 :ADDR2 = 1;ADDR1 = 0;ADDR0 = 1;i++;P0 = 0x00;break;
+        case 6 :ADDR2 = 1;ADDR1 = 1;ADDR0 = 0;i++;P0 = 0x00;break;
+        case 7 :ADDR2 = 1;ADDR1 = 1;ADDR0 = 1;i = 0;P0 = 0x00;break;
+        default :break;
+    }
+}
+```
+
+&emsp;&emsp;可以利用点阵LED显示图案，使用取模软件，将要点亮的LED的对应的赋值就能直接得出，比如要点亮形成一个爱心。程序如下。
+
+![取模爱心](./imgforKingST-51/取模爱心.png)
+
+```C
+#include<reg52.h>
+
+sbit ADDR0 = P1^0;
+sbit ADDR1 = P1^1;
+sbit ADDR2 = P1^2;
+sbit ADDR3 = P1^3;
+sbit ENLED = P1^4;
+
+unsigned char code image[] = {  //图片的字模表
+    0xFF, 0x99, 0x00, 0x00, 0x00, 0x81, 0xC3, 0xE7
+};
+
+void main()
+{
+    //执行语句
+    //LED部分
+    ENLED = 0;  //使能U4的74HC138
+    ADDR3 = 0;
+    //中断部分
+    EA = 1;     //使能总中断
+    ET0 = 1;    //使能定时器T0中断
+    //定时器部分
+    TMOD = 0x01;    //设置T0为模式1
+    TH0 = 0xFC;     //T0初值赋0xFC67，定时1ms
+    TL0 = 0x67;
+    TR0 = 1;       //启动定时器T0
+    //循环体
+    while(1);
+}
+
+//中断函数
+void InterruptTimer0() interrupt 1
+{
+    static unsigned char i = 0; //动态扫描索引
+
+    TH0 = 0xFC; //重新加载初值
+    TL0 = 0x67;
+
+    //以下为动态刷新
+    P0 = 0xFF;  //消隐
+    switch(i)
+    {
+        case 0 :ADDR2 = 0;ADDR1 = 0;ADDR0 = 0;i++;P0 = image[0];break;
+        case 1 :ADDR2 = 0;ADDR1 = 0;ADDR0 = 1;i++;P0 = image[1];break;
+        case 2 :ADDR2 = 0;ADDR1 = 1;ADDR0 = 0;i++;P0 = image[2];break;
+        case 3 :ADDR2 = 0;ADDR1 = 1;ADDR0 = 1;i++;P0 = image[3];break;
+        case 4 :ADDR2 = 1;ADDR1 = 0;ADDR0 = 0;i++;P0 = image[4];break;
+        case 5 :ADDR2 = 1;ADDR1 = 0;ADDR0 = 1;i++;P0 = image[5];break;
+        case 6 :ADDR2 = 1;ADDR1 = 1;ADDR0 = 0;i++;P0 = image[6];break;
+        case 7 :ADDR2 = 1;ADDR1 = 1;ADDR0 = 1;i = 0;P0 = image[7];break;
+        default :break;
+    }
+}
+```
+
+#### 点阵LED纵向移动
+
+&emsp;&emsp;因为电路图的设计，可以看出，三八译码器控制的三极管连接着点阵LED的左侧引脚，所以这个电路设计就定死了刷新的方向，即这个电路设计的点阵LED刷新是一行一行刷新的，这就决定了这个点阵LED是纵向移动的程序比较简洁，横向移动就需要用到二维数组了。
+
+&emsp;&emsp;基于该电路图的点阵LED纵向移动，读取LED显示为第一幅图为数组的0到7，第二幅图为数组的1-8……所以可以用一维数组顺序读取下去。程序如下。
+
+```C
+#include<reg52.h>
+
+sbit ADDR0 = P1^0;
+sbit ADDR1 = P1^1;
+sbit ADDR2 = P1^2;
+sbit ADDR3 = P1^3;
+sbit ENLED = P1^4;
+
+unsigned char code image[] = {  //图片的字模表
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+    0x7D, 0x01, 0x01, 0x7D, 0xFF, 0xFF, 0xE3, 0xC1,
+    0x81, 0x03, 0x03, 0x81, 0xC1, 0xE3, 0xFF, 0xFF,
+    0x81, 0x01, 0x3F, 0x3F, 0x3F, 0x01, 0x81, 0xFF,
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+};
+
+void main()
+{
+    //执行语句
+    //LED部分
+    ENLED = 0;  //使能U4的74HC138
+    ADDR3 = 0;
+    //中断部分
+    EA = 1;     //使能总中断
+    ET0 = 1;    //使能定时器0中断
+    //定时器部分
+    TMOD = 0x01;    //设置T0为模式1
+    TH0 = 0xFC;     //T0初值赋0xFC67，定时1ms
+    TL0 = 0x67;
+    TR0 = 1；       //启动定时器T0
+    //循环体
+    while(1);
+}
+
+//中断函数
+void InterruptTimer0() interrupt 1
+{
+    static unsigned char i = 0; //动态扫描索引
+    static unsigned char tmr = 0;   //用于累加后延时250ms
+    static unsigned char index = 0; //用于图片刷新
+
+    TH0 = 0xFC; //重新加载初值
+    TL0 = 0x67;
+
+    //以下为动态刷新
+    P0 = 0xFF;  //消隐
+    switch(i)
+    {
+        case 0 :ADDR2 = 0;ADDR1 = 0;ADDR0 = 0;i++;P0 = image[index];break;
+        case 1 :ADDR2 = 0;ADDR1 = 0;ADDR0 = 1;i++;P0 = image[index + 1];break;
+        case 2 :ADDR2 = 0;ADDR1 = 1;ADDR0 = 0;i++;P0 = image[index + 2];break;
+        case 3 :ADDR2 = 0;ADDR1 = 1;ADDR0 = 1;i++;P0 = image[index + 3];break;
+        case 4 :ADDR2 = 1;ADDR1 = 0;ADDR0 = 0;i++;P0 = image[index + 4];break;
+        case 5 :ADDR2 = 1;ADDR1 = 0;ADDR0 = 1;i++;P0 = image[index + 5];break;
+        case 6 :ADDR2 = 1;ADDR1 = 1;ADDR0 = 0;i++;P0 = image[index + 6];break;
+        case 7 :ADDR2 = 1;ADDR1 = 1;ADDR0 = 1;i = 0;P0 = image[index + 7];break;
+        default :break;
+    }
+
+    //定时器250ms用来切换图片
+    tmr++;
+    if(tmr >= 250)  //达到250ms切换图片
+    {
+        tmr = 0;
+        index++;    //每250ms切换下一张图片
+        if(index >= 32)
+        {
+            index = 0;
+        }
+    }
+}
+```
+
+#### 点阵LED横向移动
+
+&emsp;&emsp;由于这个电路图不是为横向移动设计的，所以不能像纵向移动一样进行一维数组的连续读取，需要用到二维数组，每次读取下一行数组。程序如下。
+
+```C
+#include<reg52.h>
+
+sbit ADDR0 = P1^0;
+sbit ADDR1 = P1^1;
+sbit ADDR2 = P1^2;
+sbit ADDR3 = P1^3;
+sbit ENLED = P1^4;
+
+unsigned char code image[30][8] = {
+    {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF},  //动画帧1
+    {0xFF,0x7F,0xFF,0xFF,0xFF,0xFF,0xFF,0x7F},  //动画帧2
+    {0xFF,0x3F,0x7F,0x7F,0x7F,0x7F,0x7F,0x3F},  //动画帧3
+    {0xFF,0x1F,0x3F,0x3F,0x3F,0x3F,0x3F,0x1F},  //动画帧4
+    {0xFF,0x0F,0x9F,0x9F,0x9F,0x9F,0x9F,0x0F},  //动画帧5
+    {0xFF,0x87,0xCF,0xCF,0xCF,0xCF,0xCF,0x87},  //动画帧6
+    {0xFF,0xC3,0xE7,0xE7,0xE7,0xE7,0xE7,0xC3},  //动画帧7
+    {0xFF,0xE1,0x73,0x73,0x73,0xF3,0xF3,0xE1},  //动画帧8
+    {0xFF,0x70,0x39,0x39,0x39,0x79,0xF9,0xF0},  //动画帧9
+    {0xFF,0x38,0x1C,0x1C,0x1C,0x3C,0x7C,0xF8},  //动画帧10
+    {0xFF,0x9C,0x0E,0x0E,0x0E,0x1E,0x3E,0x7C},  //动画帧11
+    {0xFF,0xCE,0x07,0x07,0x07,0x0F,0x1F,0x3E},  //动画帧12
+    {0xFF,0x67,0x03,0x03,0x03,0x07,0x0F,0x9F},  //动画帧13
+    {0xFF,0x33,0x01,0x01,0x01,0x03,0x87,0xCF},  //动画帧14
+    {0xFF,0x99,0x00,0x00,0x00,0x81,0xC3,0xE7},  //动画帧15
+    {0xFF,0xCC,0x80,0x80,0x80,0xC0,0xE1,0xF3},  //动画帧16
+    {0xFF,0xE6,0xC0,0xC0,0xC0,0xE0,0xF0,0xF9},  //动画帧17
+    {0xFF,0x73,0x60,0x60,0x60,0x70,0x78,0xFC},  //动画帧18
+    {0xFF,0x39,0x30,0x30,0x30,0x38,0x3C,0x7E},  //动画帧19
+    {0xFF,0x9C,0x98,0x98,0x98,0x9C,0x1E,0x3F},  //动画帧20
+    {0xFF,0xCE,0xCC,0xCC,0xCC,0xCE,0x0F,0x1F},  //动画帧21
+    {0xFF,0x67,0x66,0x66,0x66,0x67,0x07,0x0F},  //动画帧22
+    {0xFF,0x33,0x33,0x33,0x33,0x33,0x03,0x87},  //动画帧23
+    {0xFF,0x99,0x99,0x99,0x99,0x99,0x81,0xC3},  //动画帧24
+    {0xFF,0xCC,0xCC,0xCC,0xCC,0xCC,0xC0,0xE1},  //动画帧25
+    {0xFF,0xE6,0xE6,0xE6,0xE6,0xE6,0xE0,0xF0},  //动画帧26
+    {0xFF,0xF3,0xF3,0xF3,0xF3,0xF3,0xF0,0xF8},  //动画帧27
+    {0xFF,0xF9,0xF9,0xF9,0xF9,0xF9,0xF8,0xFC},  //动画帧28
+    {0xFF,0xFC,0xFC,0xFC,0xFC,0xFC,0xFC,0xFE},  //动画帧29
+    {0xFF,0xFE,0xFE,0xFE,0xFE,0xFE,0xFE,0xFF}   //动画帧30
+};
+
+void main()
+{
+    //执行语句
+    //LED部分
+    ENLED = 0;  //使能U4的74HC138
+    ADDR3 = 0;
+    //中断部分
+    EA = 1;     //使能总中断
+    ET0 = 1;    //使能定时器0中断
+    //定时器部分
+    TMOD = 0x01;    //设置T0为模式1
+    TH0 = 0xFC;     //T0初值赋0xFC67，定时1ms
+    TL0 = 0x67;
+    TR0 = 1;       //启动定时器T0
+    //循环体
+    while(1);
+}
+
+//中断函数
+void InterruptTimer0() interrupt 1
+{
+    static unsigned char i = 0; //动态扫描索引
+    static unsigned char tmr = 0;   //用于累加后延时250ms
+    static unsigned char index = 0; //用于图片刷新
+
+    TH0 = 0xFC; //重新加载初值
+    TL0 = 0x67;
+
+    //以下为动态刷新
+    P0 = 0xFF;  //消隐
+    switch(i)
+    {
+        case 0 :ADDR2 = 0;ADDR1 = 0;ADDR0 = 0;i++;P0 = image[index][0];break;
+        case 1 :ADDR2 = 0;ADDR1 = 0;ADDR0 = 1;i++;P0 = image[index][1];break;
+        case 2 :ADDR2 = 0;ADDR1 = 1;ADDR0 = 0;i++;P0 = image[index][2];break;
+        case 3 :ADDR2 = 0;ADDR1 = 1;ADDR0 = 1;i++;P0 = image[index][3];break;
+        case 4 :ADDR2 = 1;ADDR1 = 0;ADDR0 = 0;i++;P0 = image[index][4];break;
+        case 5 :ADDR2 = 1;ADDR1 = 0;ADDR0 = 1;i++;P0 = image[index][5];break;
+        case 6 :ADDR2 = 1;ADDR1 = 1;ADDR0 = 0;i++;P0 = image[index][6];break;
+        case 7 :ADDR2 = 1;ADDR1 = 1;ADDR0 = 1;i = 0;P0 = image[index][7];break;
+        default :break;
+    }
+
+    //定时器250ms用来切换图片
+    tmr++;
+    if(tmr >= 250)  //达到250ms切换图片
+    {
+        tmr = 0;
+        index++;    //每250ms切换下一张图片
+        if(index >= 30)
+        {
+            index = 0;
+        }
+    }
+}
+```
+
 ---
 
 ## Chapter 8 函数进阶与按键
