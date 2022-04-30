@@ -1,4 +1,4 @@
-C51 COMPILER V9.54   MAIN                                                                  04/24/2022 00:56:06 PAGE 1   
+C51 COMPILER V9.54   MAIN                                                                  04/30/2022 21:49:05 PAGE 1   
 
 
 C51 COMPILER V9.54, COMPILATION OF MODULE MAIN
@@ -8,20 +8,101 @@ COMPILER INVOKED BY: D:\soft\Keil\Keil\C51\BIN\C51.EXE ..\User\main.c OPTIMIZE(8
 
 line level    source
 
-   1          #include <reg52.h>
-   2          
-   3          void main()
-   4          {
-   5   1        while(1);
-   6   1      }
+   1          /*
+   2          *******************************************************************************
+   3          *                     《手把手教你学51单片机(C语言版)》
+   4          * 文件名：main.c
+   5          * 描  述：第7章 课后练习
+   6          * 版本号：v1.0.0
+   7          * 备  注：点阵LED进行倒计时
+   8          *******************************************************************************
+   9          */
+  10          #include <reg52.h>
+  11          
+  12          sbit ADDR0 = P1^0;
+  13          sbit ADDR1 = P1^1;
+  14          sbit ADDR2 = P1^2;
+  15          sbit ADDR3 = P1^3;
+  16          sbit ENLED = P1^4;
+  17          
+  18          unsigned char code image[10][8] = {
+  19            {0xC3, 0x81, 0x99, 0x81, 0x83, 0x9F, 0x83, 0xC1},  //数字9
+  20            {0xC3, 0x81, 0x99, 0xC3, 0xC3, 0x99, 0x81, 0xC3},  //数字8
+  21            {0x81, 0x81, 0x9F, 0xCF, 0xCF, 0xE7, 0xE7, 0xE7},  //数字7
+  22            {0xC3, 0x81, 0xF9, 0xC1, 0x81, 0x99, 0x81, 0xC3},  //数字6
+  23            {0x81, 0xC1, 0xF9, 0xC3, 0x87, 0x9D, 0x81, 0xC3},  //数字5
+  24            {0xCF, 0xC7, 0xC3, 0xC9, 0xC9, 0x81, 0xCF, 0xCF},  //数字4
+  25            {0xC3, 0x81, 0x9D, 0xC7, 0xC7, 0x9D, 0x81, 0xC3},  //数字3
+  26            {0xC3, 0x81, 0x9D, 0x87, 0xC3, 0xF9, 0xC1, 0x81},  //数字2
+  27            {0xEF, 0xE7, 0xE3, 0xE7, 0xE7, 0xE7, 0xE7, 0xC3},  //数字1
+  28            {0xC3, 0x81, 0x99, 0x99, 0x99, 0x99, 0x81, 0xC3},  //数字0
+  29          };
+  30          
+  31          void main()
+  32          {
+  33   1          //执行语句
+  34   1          //LED部分
+  35   1          ENLED = 0;  //使能U4的74HC138
+  36   1          ADDR3 = 0;
+  37   1          //中断部分
+  38   1          EA = 1;     //使能总中断
+  39   1          ET0 = 1;    //使能定时器0中断
+  40   1          //定时器部分
+  41   1          TMOD = 0x01;    //设置T0为模式1
+  42   1          TH0 = 0xFC;     //T0初值赋0xFC67，定时1ms
+  43   1          TL0 = 0x67;
+  44   1          TR0 = 1;       //启动定时器T0
+  45   1          //循环体
+  46   1          while(1);
+  47   1      }
+  48          
+  49          //中断函数
+  50          void InterruptTimer0() interrupt 1
+  51          {
+  52   1          static unsigned char i = 0; //动态扫描索引
+  53   1          static unsigned int tmr = 0;   //用于累加后延时250ms
+  54   1          static unsigned char index = 0; //用于图片刷新
+C51 COMPILER V9.54   MAIN                                                                  04/30/2022 21:49:05 PAGE 2   
+
+  55   1      
+  56   1          TH0 = 0xFC; //重新加载初值
+  57   1          TL0 = 0x67;
+  58   1      
+  59   1          //以下为动态刷新
+  60   1          P0 = 0xFF;  //消隐
+  61   1          switch(i)
+  62   1          {
+  63   2              case 0 :ADDR2 = 0;ADDR1 = 0;ADDR0 = 0;i++;P0 = image[index][0];break;
+  64   2              case 1 :ADDR2 = 0;ADDR1 = 0;ADDR0 = 1;i++;P0 = image[index][1];break;
+  65   2              case 2 :ADDR2 = 0;ADDR1 = 1;ADDR0 = 0;i++;P0 = image[index][2];break;
+  66   2              case 3 :ADDR2 = 0;ADDR1 = 1;ADDR0 = 1;i++;P0 = image[index][3];break;
+  67   2              case 4 :ADDR2 = 1;ADDR1 = 0;ADDR0 = 0;i++;P0 = image[index][4];break;
+  68   2              case 5 :ADDR2 = 1;ADDR1 = 0;ADDR0 = 1;i++;P0 = image[index][5];break;
+  69   2              case 6 :ADDR2 = 1;ADDR1 = 1;ADDR0 = 0;i++;P0 = image[index][6];break;
+  70   2              case 7 :ADDR2 = 1;ADDR1 = 1;ADDR0 = 1;i = 0;P0 = image[index][7];break;
+  71   2              default :break;
+  72   2          }
+  73   1      
+  74   1          //定时器1s用来切换图片
+  75   1          tmr++;
+  76   1          if(tmr >= 1000)  //达到250ms切换图片
+  77   1          {
+  78   2              tmr = 0;
+  79   2              index++;    //每250ms切换下一张图片
+  80   2              if(index >= 10)
+  81   2              {
+  82   3                  index = 0;
+  83   3              }
+  84   2          }
+  85   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =      2    ----
-   CONSTANT SIZE    =   ----    ----
+   CODE SIZE        =    324    ----
+   CONSTANT SIZE    =     80    ----
    XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----
-   DATA SIZE        =   ----    ----
+   DATA SIZE        =      4    ----
    IDATA SIZE       =   ----    ----
    BIT SIZE         =   ----    ----
 END OF MODULE INFORMATION.

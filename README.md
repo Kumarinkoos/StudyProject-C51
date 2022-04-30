@@ -44,9 +44,9 @@
 
 #### Cheaper 7 变量进阶与点阵LED
 
-&emsp;gitee博客：<>
+&emsp;gitee博客：<https://kumarinko.gitee.io/2022/04/30/Study-KingST51-Cheaper7/>
 
-&emsp;github博客：<>
+&emsp;github博客：<https://kumarinkoos.github.io/2022/04/30/Study-KingST51-Cheaper7/>
 
 #### Cheaper 8 函数进阶与按键
 

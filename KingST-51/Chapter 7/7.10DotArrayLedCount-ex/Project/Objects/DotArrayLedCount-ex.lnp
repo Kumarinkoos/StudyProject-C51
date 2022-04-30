@@ -1,0 +1,4 @@
+".\Objects\STARTUP.obj",
+".\Objects\main.obj" 
+TO ".\Objects\DotArrayLedCount-ex" 
+PRINT(".\Listings\DotArrayLedCount-ex.m51") RAMSIZE(256) 

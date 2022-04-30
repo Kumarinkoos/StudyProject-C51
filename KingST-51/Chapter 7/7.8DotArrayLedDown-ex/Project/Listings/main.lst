@@ -1,4 +1,4 @@
-C51 COMPILER V9.54   MAIN                                                                  04/24/2022 00:56:06 PAGE 1   
+C51 COMPILER V9.54   MAIN                                                                  04/30/2022 21:37:17 PAGE 1   
 
 
 C51 COMPILER V9.54, COMPILATION OF MODULE MAIN
@@ -8,20 +8,96 @@ COMPILER INVOKED BY: D:\soft\Keil\Keil\C51\BIN\C51.EXE ..\User\main.c OPTIMIZE(8
 
 line level    source
 
-   1          #include <reg52.h>
-   2          
-   3          void main()
-   4          {
-   5   1        while(1);
-   6   1      }
+   1          /*
+   2          *******************************************************************************
+   3          *                     《手把手教你学51单片机(C语言版)》
+   4          * 文件名：main.c
+   5          * 描  述：第7章 课后练习
+   6          * 版本号：v1.0.0
+   7          * 备  注：向下点亮点阵LED
+   8          *******************************************************************************
+   9          */
+  10          #include <reg52.h>
+  11          
+  12          sbit ADDR0 = P1^0;
+  13          sbit ADDR1 = P1^1;
+  14          sbit ADDR2 = P1^2;
+  15          sbit ADDR3 = P1^3;
+  16          sbit ENLED = P1^4;
+  17          
+  18          unsigned char code image[] = {  //图片的字模表
+  19              0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,
+  20              0x99,0x99,0x99,0x99,0x99,0x81,0xC3,0xFF,
+  21              0x99,0x00,0x00,0x00,0x81,0xC3,0xE7,0xFF,
+  22              0xC3,0xE7,0xE7,0xE7,0xE7,0xE7,0xC3,0xFF,
+  23              0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF
+  24          };
+  25          
+  26          void main()
+  27          {
+  28   1        //执行语句
+  29   1          //LED部分
+  30   1          ENLED = 0;  //使能U4的74HC138
+  31   1          ADDR3 = 0;
+  32   1          //中断部分
+  33   1          EA = 1;     //使能总中断
+  34   1          ET0 = 1;    //使能定时器0中断
+  35   1          //定时器部分
+  36   1          TMOD = 0x01;    //设置T0为模式1
+  37   1          TH0 = 0xFC;     //T0初值赋0xFC67，定时1ms
+  38   1          TL0 = 0x67;
+  39   1          TR0 = 1;       //启动定时器T0
+  40   1          //循环体
+  41   1          while(1);
+  42   1      }
+  43          
+  44          //中断函数
+  45          void InterruptTimer0() interrupt 1
+  46          {
+  47   1          static unsigned char i = 0; //动态扫描索引
+  48   1          static unsigned char tmr = 0;   //用于累加后延时250ms
+  49   1          static char index = 31; //用于图片刷新
+  50   1      
+  51   1          TH0 = 0xFC; //重新加载初值
+  52   1          TL0 = 0x67;
+  53   1      
+  54   1          //以下为动态刷新
+C51 COMPILER V9.54   MAIN                                                                  04/30/2022 21:37:17 PAGE 2   
+
+  55   1          P0 = 0xFF;  //消隐
+  56   1          switch(i)
+  57   1          {
+  58   2              case 0 :ADDR2 = 0;ADDR1 = 0;ADDR0 = 0;i++;P0 = image[index];break;
+  59   2              case 1 :ADDR2 = 0;ADDR1 = 0;ADDR0 = 1;i++;P0 = image[index + 1];break;
+  60   2              case 2 :ADDR2 = 0;ADDR1 = 1;ADDR0 = 0;i++;P0 = image[index + 2];break;
+  61   2              case 3 :ADDR2 = 0;ADDR1 = 1;ADDR0 = 1;i++;P0 = image[index + 3];break;
+  62   2              case 4 :ADDR2 = 1;ADDR1 = 0;ADDR0 = 0;i++;P0 = image[index + 4];break;
+  63   2              case 5 :ADDR2 = 1;ADDR1 = 0;ADDR0 = 1;i++;P0 = image[index + 5];break;
+  64   2              case 6 :ADDR2 = 1;ADDR1 = 1;ADDR0 = 0;i++;P0 = image[index + 6];break;
+  65   2              case 7 :ADDR2 = 1;ADDR1 = 1;ADDR0 = 1;i = 0;P0 = image[index + 7];break;
+  66   2              default :break;
+  67   2          }
+  68   1      
+  69   1          //定时器250ms用来切换图片
+  70   1          tmr++;
+  71   1          if(tmr >= 250)  //达到250ms切换图片
+  72   1          {
+  73   2              tmr = 0;
+  74   2              index--;    //每250ms切换下一张图片
+  75   2              if(index <= 0)
+  76   2              {
+  77   3                  index = 31;
+  78   3              }
+  79   2          }
+  80   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =      2    ----
-   CONSTANT SIZE    =   ----    ----
+   CODE SIZE        =    329    ----
+   CONSTANT SIZE    =     40    ----
    XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----
-   DATA SIZE        =   ----    ----
+   DATA SIZE        =      3    ----
    IDATA SIZE       =   ----    ----
    BIT SIZE         =   ----    ----
 END OF MODULE INFORMATION.
